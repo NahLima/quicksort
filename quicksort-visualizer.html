@@ -170,14 +170,6 @@
     }
     .log-line.highlight { color: var(--text); font-weight: 500; }
     .empty-hint { font-size: 13px; color: var(--text-tertiary); font-style: italic; }
-    .tag {
-      background: rgba(127,119,221,0.12);
-      color: #534AB7;
-      border-radius: 4px;
-      font-size: 11px;
-      padding: 2px 7px;
-      font-weight: 500;
-    }
   </style>
 </head>
 <body>
@@ -193,15 +185,15 @@
     <div class="section-label">Adicionar valores</div>
     <div class="input-row">
       <input type="number" id="rand-count" value="10" min="2" max="40" />
-      <button class="btn-secondary" onclick="generateRandom()">
+      <button class="btn-secondary" id="btn-gen-rand" onclick="generateRandom()">
         <i class="ti ti-refresh"></i> Gerar aleatórios
       </button>
     </div>
     <div class="input-row">
-      <input type="number" id="val-input" placeholder="Digite um valor" min="-999" max="9999"
+      <input type="number" id="val-input" placeholder="Digite um valor (1 a 99)" min="1" max="99"
         onkeydown="if(event.key==='Enter')addValue()" />
-      <button class="btn-secondary" onclick="addValue()"><i class="ti ti-plus"></i> Adicionar</button>
-      <button class="btn-secondary" onclick="clearAll()" title="Limpar tudo"><i class="ti ti-trash"></i></button>
+      <button class="btn-secondary" id="btn-add-val" onclick="addValue()"><i class="ti ti-plus"></i> Adicionar</button>
+      <button class="btn-secondary" id="btn-clear" onclick="clearAll()" title="Limpar tudo"><i class="ti ti-trash"></i></button>
     </div>
     <div class="chip-list" id="chip-list">
       <span class="empty-hint">Nenhum valor adicionado ainda.</span>
@@ -237,7 +229,7 @@
       <button class="btn-secondary" id="btn-step" onclick="stepForward()" disabled>
         <i class="ti ti-arrow-right"></i> Próximo passo
       </button>
-      <button class="btn-secondary" onclick="resetViz()">
+      <button class="btn-secondary" id="btn-reset" onclick="resetViz()">
         <i class="ti ti-refresh"></i> Resetar
       </button>
     </div>
@@ -265,12 +257,19 @@
 
   let values = [], steps = [], currentStep = 0;
   let animTimer = null, paused = false;
-  let comparisons = 0, swaps = 0;
 
   /* ── INPUTS ── */
+  function setInputsDisabled(disabled) {
+    document.getElementById('btn-gen-rand').disabled = disabled;
+    document.getElementById('btn-add-val').disabled = disabled;
+    document.getElementById('btn-clear').disabled = disabled;
+    document.getElementById('val-input').disabled = disabled;
+    document.querySelectorAll('.chip button').forEach(btn => btn.disabled = disabled);
+  }
+
   function generateRandom() {
     const n = Math.min(40, Math.max(2, parseInt(document.getElementById('rand-count').value) || 10));
-    values = Array.from({length: n}, () => Math.floor(Math.random() * 99) + 1);
+    values = Array.from({length: n}, () => Math.floor(Math.random() * 98) + 2); // Evita 0 ou valores gigantes
     renderChips(); renderBars(values, [], -1, [], 'none');
     resetStats(); clearLog();
     document.getElementById('step-info').textContent = 'Valores gerados. Clique em "Iniciar" para ordenar.';
@@ -280,7 +279,7 @@
   function addValue() {
     const inp = document.getElementById('val-input');
     const v = parseInt(inp.value);
-    if (isNaN(v)) { inp.focus(); return; }
+    if (isNaN(v) || v < 1 || v > 99) { inp.focus(); return; } // Validação estrita para as barras ficarem proporcionais
     if (values.length >= 40) { addLog('Máximo de 40 valores atingido.'); return; }
     values.push(v); inp.value = '';
     renderChips(); renderBars(values, [], -1, [], 'none');
@@ -345,47 +344,57 @@
 
   /* ── STATS ── */
   function resetStats() {
-    comparisons = 0; swaps = 0;
     ['stat-comp','stat-swap','stat-step'].forEach(id => document.getElementById(id).textContent = '0');
   }
-  function updateStats() {
-    document.getElementById('stat-comp').textContent = comparisons;
-    document.getElementById('stat-swap').textContent = swaps;
-    document.getElementById('stat-step').textContent = currentStep;
+  function updateStats(comp, sw, current) {
+    document.getElementById('stat-comp').textContent = comp;
+    document.getElementById('stat-swap').textContent = sw;
+    document.getElementById('stat-step').textContent = current;
   }
 
-  /* ── QUICKSORT LOGIC (Java-style, same algorithm) ── */
+  /* ── QUICKSORT LOGIC (Com tracking determinista de estados) ── */
   function quickSortSteps(arr) {
     const steps = [];
     const sorted = new Set();
+    let currentComp = 0;
+    let currentSwaps = 0;
 
     function partition(a, lo, hi) {
       const pivot = a[hi];
       steps.push({type:'pivot', arr:[...a], pivot:hi, comparing:[], sorted:[...sorted],
+        comp: currentComp, swaps: currentSwaps,
         msg:`Pivô escolhido: ${pivot} (índice ${hi}) | subarray [${lo}..${hi}]`});
       let i = lo - 1;
       for (let j = lo; j < hi; j++) {
+        currentComp++;
         steps.push({type:'compare', arr:[...a], pivot:hi, comparing:[j, hi], sorted:[...sorted],
+          comp: currentComp, swaps: currentSwaps,
           msg:`Comparando a[${j}]=${a[j]} com pivô=${pivot}`});
         if (a[j] <= pivot) {
           i++;
           if (i !== j) {
+            currentSwaps++;
             steps.push({type:'swap', arr:[...a], pivot:hi, comparing:[i, j], sorted:[...sorted],
+              comp: currentComp, swaps: currentSwaps,
               msg:`Trocando a[${i}]=${a[i]} ↔ a[${j}]=${a[j]}`});
             [a[i], a[j]] = [a[j], a[i]];
             steps.push({type:'swapped', arr:[...a], pivot:hi, comparing:[i, j], sorted:[...sorted],
-              msg:`Resultado: [${a.slice(lo, hi+1).join(', ')}]`});
+              comp: currentComp, swaps: currentSwaps,
+              msg:`Resultado parcial: [${a.slice(lo, hi+1).join(', ')}]`});
           }
         }
       }
       const pf = i + 1;
       if (pf !== hi) {
+        currentSwaps++;
         steps.push({type:'swap', arr:[...a], pivot:hi, comparing:[pf, hi], sorted:[...sorted],
+          comp: currentComp, swaps: currentSwaps,
           msg:`Posicionando pivô: a[${pf}]=${a[pf]} ↔ a[${hi}]=${a[hi]}`});
         [a[pf], a[hi]] = [a[hi], a[pf]];
       }
       sorted.add(pf);
       steps.push({type:'placed', arr:[...a], pivot:pf, comparing:[], sorted:[...sorted],
+        comp: currentComp, swaps: currentSwaps,
         msg:`✓ Pivô ${a[pf]} fixado na posição ${pf}`});
       return pf;
     }
@@ -401,6 +410,7 @@
     if (arr.length === 1) sorted.add(0);
     qs(arr, 0, arr.length - 1);
     steps.push({type:'done', arr:[...arr], pivot:-1, comparing:[], sorted:[...sorted],
+      comp: currentComp, swaps: currentSwaps,
       msg:'✓ Ordenação concluída!'});
     return steps;
   }
@@ -410,16 +420,16 @@
     renderBars(s.arr,
       (s.type === 'compare' || s.type === 'swap' || s.type === 'swapped') ? s.comparing : [],
       s.pivot, s.sorted || [], s.type === 'swap' ? 'swap' : 'none');
-    if (s.type === 'compare') comparisons++;
-    if (s.type === 'swap') swaps++;
+    
     document.getElementById('step-info').textContent = s.msg;
     addLog(s.msg, s.type === 'placed' || s.type === 'done');
-    updateStats();
+    updateStats(s.comp, s.swaps, currentStep);
   }
 
   function startSort() {
     if (!values.length) { addLog('Adicione valores primeiro!'); return; }
     stopTimer(); resetStats(); clearLog();
+    setInputsDisabled(true);
     const arr = [...values];
     steps = quickSortSteps(arr);
     currentStep = 0;
@@ -469,6 +479,7 @@
   function resetViz() {
     stopTimer(); paused = false; steps = []; currentStep = 0;
     resetStats(); clearLog();
+    setInputsDisabled(false);
     renderBars(values, [], -1, [], 'none');
     renderChips();
     document.getElementById('btn-pause').disabled = true;
