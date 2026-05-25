@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualizador de QuickSort</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f5f4f0;
+      --text: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-tertiary: #aaa;
+      --border: rgba(0,0,0,0.12);
+      --border-secondary: rgba(0,0,0,0.25);
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1e1e;
+        --bg-secondary: #2a2a2a;
+        --text: #f0f0f0;
+        --text-secondary: #aaa;
+        --text-tertiary: #666;
+        --border: rgba(255,255,255,0.12);
+        --border-secondary: rgba(255,255,255,0.25);
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 740px; margin: 0 auto; }
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+    h1 small { font-size: 14px; font-weight: 400; color: var(--text-secondary); display: block; margin-top: 4px; }
+    .section-label {
+      font-size: 11px; font-weight: 500; color: var(--text-tertiary);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+    }
+    .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+    input[type="number"], input[type="text"] {
+      background: var(--bg);
+      border: 0.5px solid var(--border-secondary);
+      border-radius: var(--radius);
+      padding: 7px 12px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+    }
+    input[type="number"]:focus, input[type="text"]:focus {
+      border-color: #7F77DD;
+      box-shadow: 0 0 0 3px rgba(127,119,221,0.15);
+    }
+    input[type="number"] { width: 90px; }
+    input[type="text"] { flex: 1; }
+    button {
+      border-radius: var(--radius);
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .btn-primary {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      font-weight: 500;
+    }
+    .btn-primary:hover { opacity: 0.82; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 0.5px solid var(--border-secondary);
+    }
+    .btn-secondary:hover { background: var(--bg-secondary); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .chip-list {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      min-height: 36px; margin-bottom: 1.25rem; align-items: center;
+    }
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg-secondary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 10px;
+      font-size: 13px;
+    }
+    .chip button {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-tertiary); font-size: 15px;
+      line-height: 1; padding: 0 2px;
+    }
+    .chip button:hover { color: var(--text); }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 1.25rem;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .bars-area {
+      display: flex; align-items: flex-end; gap: 3px;
+      height: 210px;
+      border-bottom: 0.5px solid var(--border);
+      padding-bottom: 4px;
+      margin-bottom: 28px;
+    }
+    .bar {
+      flex: 1; min-width: 8px;
+      border-radius: 3px 3px 0 0;
+      transition: background 0.13s, height 0.13s;
+      position: relative;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .bar-val {
+      font-size: 10px; color: var(--text-secondary);
+      position: absolute; top: -16px;
+      white-space: nowrap;
+    }
+    .bar-idx {
+      font-size: 10px; color: var(--text-tertiary);
+      position: absolute; bottom: -18px;
+    }
+    .step-info {
+      font-size: 13px; color: var(--text-secondary);
+      min-height: 20px; margin-bottom: 1rem;
+    }
+    .stats-row { display: flex; gap: 12px; margin-bottom: 1.25rem; }
+    .stat-card {
+      flex: 1; background: var(--bg-secondary);
+      border-radius: var(--radius);
+      padding: 12px; text-align: center;
+    }
+    .stat-card .sv { font-size: 22px; font-weight: 500; }
+    .stat-card .sl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+    .speed-row {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+    input[type="range"] {
+      width: 130px; accent-color: #7F77DD;
+    }
+    .log-area {
+      background: var(--bg-secondary);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .log-line.highlight { color: var(--text); font-weight: 500; }
+    .empty-hint { font-size: 13px; color: var(--text-tertiary); font-style: italic; }
+    .tag {
+      background: rgba(127,119,221,0.12);
+      color: #534AB7;
+      border-radius: 4px;
+      font-size: 11px;
+      padding: 2px 7px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="card">
+    <h1>Visualizador de QuickSort
+      <small>Algoritmo clássico de ordenação com animação passo a passo</small>
+    </h1>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Adicionar valores</div>
+    <div class="input-row">
+      <input type="number" id="rand-count" value="10" min="2" max="40" />
+      <button class="btn-secondary" onclick="generateRandom()">
+        <i class="ti ti-refresh"></i> Gerar aleatórios
+      </button>
+    </div>
+    <div class="input-row">
+      <input type="number" id="val-input" placeholder="Digite um valor" min="-999" max="9999"
+        onkeydown="if(event.key==='Enter')addValue()" />
+      <button class="btn-secondary" onclick="addValue()"><i class="ti ti-plus"></i> Adicionar</button>
+      <button class="btn-secondary" onclick="clearAll()" title="Limpar tudo"><i class="ti ti-trash"></i></button>
+    </div>
+    <div class="chip-list" id="chip-list">
+      <span class="empty-hint">Nenhum valor adicionado ainda.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div> Normal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#D85A30"></div> Pivô</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div> Comparando</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div> Trocando</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#639922"></div> Ordenado</div>
+    </div>
+
+    <div class="bars-area" id="bars-area"></div>
+
+    <div class="step-info" id="step-info">Adicione valores e clique em "Iniciar" para visualizar.</div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="sv" id="stat-comp">0</div><div class="sl">comparações</div></div>
+      <div class="stat-card"><div class="sv" id="stat-swap">0</div><div class="sl">trocas</div></div>
+      <div class="stat-card"><div class="sv" id="stat-step">0</div><div class="sl">passo atual</div></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-primary" id="btn-start" onclick="startSort()">
+        <i class="ti ti-player-play"></i> Iniciar
+      </button>
+      <button class="btn-secondary" id="btn-pause" onclick="togglePause()" disabled>
+        <i class="ti ti-player-pause"></i> Pausar
+      </button>
+      <button class="btn-secondary" id="btn-step" onclick="stepForward()" disabled>
+        <i class="ti ti-arrow-right"></i> Próximo passo
+      </button>
+      <button class="btn-secondary" onclick="resetViz()">
+        <i class="ti ti-refresh"></i> Resetar
+      </button>
+    </div>
+    <div class="speed-row">
+      <span>Velocidade:</span>
+      <input type="range" id="speed-slider" min="1" max="5" value="3" step="1"
+        oninput="document.getElementById('speed-label').textContent=speedNames[this.value]" />
+      <span id="speed-label">Média</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label" style="margin-bottom:10px">Log de execução</div>
+    <div class="log-area" id="log-area">
+      <span style="color:var(--text-tertiary)">O log aparecerá aqui durante a execução...</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ── QuickSort Visualizer ── */
+  const speedMap   = {1:900, 2:550, 3:280, 4:130, 5:40};
+  const speedNames = {1:'Muito lento', 2:'Lento', 3:'Média', 4:'Rápido', 5:'Muito rápido'};
+
+  let values = [], steps = [], currentStep = 0;
+  let animTimer = null, paused = false;
+  let comparisons = 0, swaps = 0;
+
+  /* ── INPUTS ── */
+  function generateRandom() {
+    const n = Math.min(40, Math.max(2, parseInt(document.getElementById('rand-count').value) || 10));
+    values = Array.from({length: n}, () => Math.floor(Math.random() * 99) + 1);
+    renderChips(); renderBars(values, [], -1, [], 'none');
+    resetStats(); clearLog();
+    document.getElementById('step-info').textContent = 'Valores gerados. Clique em "Iniciar" para ordenar.';
+    steps = []; currentStep = 0;
+  }
+
+  function addValue() {
+    const inp = document.getElementById('val-input');
+    const v = parseInt(inp.value);
+    if (isNaN(v)) { inp.focus(); return; }
+    if (values.length >= 40) { addLog('Máximo de 40 valores atingido.'); return; }
+    values.push(v); inp.value = '';
+    renderChips(); renderBars(values, [], -1, [], 'none');
+    steps = []; currentStep = 0; resetStats();
+    document.getElementById('step-info').textContent = 'Valores prontos. Clique em "Iniciar".';
+  }
+
+  function removeValue(i) {
+    values.splice(i, 1);
+    renderChips(); renderBars(values, [], -1, [], 'none');
+    steps = []; currentStep = 0; resetStats();
+  }
+
+  function clearAll() {
+    values = []; steps = []; currentStep = 0; resetStats();
+    renderChips(); renderBars([], [], -1, [], 'none'); clearLog();
+    document.getElementById('step-info').textContent = 'Adicione valores e clique em "Iniciar" para visualizar.';
+  }
+
+  /* ── RENDER ── */
+  function renderChips() {
+    const el = document.getElementById('chip-list');
+    if (!values.length) { el.innerHTML = '<span class="empty-hint">Nenhum valor adicionado ainda.</span>'; return; }
+    el.innerHTML = values.map((v, i) =>
+      `<span class="chip">${v}<button onclick="removeValue(${i})" aria-label="remover">×</button></span>`
+    ).join('');
+  }
+
+  function renderBars(arr, comparing, pivot, sorted, phase) {
+    const area = document.getElementById('bars-area');
+    if (!arr.length) { area.innerHTML = ''; return; }
+    const maxV = Math.max(...arr.map(Math.abs), 1);
+    area.innerHTML = arr.map((v, i) => {
+      let color = '#7F77DD';
+      if (sorted.includes(i))     color = '#639922';
+      if (comparing.includes(i))  color = '#1D9E75';
+      if (phase === 'swap' && comparing.includes(i)) color = '#EF9F27';
+      if (i === pivot)            color = '#D85A30';
+      const h = Math.max(8, Math.round((Math.abs(v) / maxV) * 190));
+      const showVal = arr.length <= 22;
+      return `<div class="bar" style="height:${h}px;background:${color}">
+        ${showVal ? `<span class="bar-val">${v}</span>` : ''}
+        ${showVal ? `<span class="bar-idx">${i}</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  /* ── LOG ── */
+  function addLog(msg, hl = false) {
+    const el = document.getElementById('log-area');
+    if (el.querySelector('span[style]')) el.innerHTML = '';
+    const line = document.createElement('div');
+    line.className = 'log-line' + (hl ? ' highlight' : '');
+    line.textContent = msg;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+  function clearLog() {
+    document.getElementById('log-area').innerHTML =
+      '<span style="color:var(--text-tertiary)">O log aparecerá aqui durante a execução...</span>';
+  }
+
+  /* ── STATS ── */
+  function resetStats() {
+    comparisons = 0; swaps = 0;
+    ['stat-comp','stat-swap','stat-step'].forEach(id => document.getElementById(id).textContent = '0');
+  }
+  function updateStats() {
+    document.getElementById('stat-comp').textContent = comparisons;
+    document.getElementById('stat-swap').textContent = swaps;
+    document.getElementById('stat-step').textContent = currentStep;
+  }
+
+  /* ── QUICKSORT LOGIC (Java-style, same algorithm) ── */
+  function quickSortSteps(arr) {
+    const steps = [];
+    const sorted = new Set();
+
+    function partition(a, lo, hi) {
+      const pivot = a[hi];
+      steps.push({type:'pivot', arr:[...a], pivot:hi, comparing:[], sorted:[...sorted],
+        msg:`Pivô escolhido: ${pivot} (índice ${hi}) | subarray [${lo}..${hi}]`});
+      let i = lo - 1;
+      for (let j = lo; j < hi; j++) {
+        steps.push({type:'compare', arr:[...a], pivot:hi, comparing:[j, hi], sorted:[...sorted],
+          msg:`Comparando a[${j}]=${a[j]} com pivô=${pivot}`});
+        if (a[j] <= pivot) {
+          i++;
+          if (i !== j) {
+            steps.push({type:'swap', arr:[...a], pivot:hi, comparing:[i, j], sorted:[...sorted],
+              msg:`Trocando a[${i}]=${a[i]} ↔ a[${j}]=${a[j]}`});
+            [a[i], a[j]] = [a[j], a[i]];
+            steps.push({type:'swapped', arr:[...a], pivot:hi, comparing:[i, j], sorted:[...sorted],
+              msg:`Resultado: [${a.slice(lo, hi+1).join(', ')}]`});
+          }
+        }
+      }
+      const pf = i + 1;
+      if (pf !== hi) {
+        steps.push({type:'swap', arr:[...a], pivot:hi, comparing:[pf, hi], sorted:[...sorted],
+          msg:`Posicionando pivô: a[${pf}]=${a[pf]} ↔ a[${hi}]=${a[hi]}`});
+        [a[pf], a[hi]] = [a[hi], a[pf]];
+      }
+      sorted.add(pf);
+      steps.push({type:'placed', arr:[...a], pivot:pf, comparing:[], sorted:[...sorted],
+        msg:`✓ Pivô ${a[pf]} fixado na posição ${pf}`});
+      return pf;
+    }
+
+    function qs(a, lo, hi) {
+      if (lo >= hi) { if (lo === hi) sorted.add(lo); return; }
+      const p = partition(a, lo, hi);
+      qs(a, lo, p - 1);
+      qs(a, p + 1, hi);
+      for (let k = lo; k <= hi; k++) sorted.add(k);
+    }
+
+    if (arr.length === 1) sorted.add(0);
+    qs(arr, 0, arr.length - 1);
+    steps.push({type:'done', arr:[...arr], pivot:-1, comparing:[], sorted:[...sorted],
+      msg:'✓ Ordenação concluída!'});
+    return steps;
+  }
+
+  /* ── ANIMATION ── */
+  function applyStep(s) {
+    renderBars(s.arr,
+      (s.type === 'compare' || s.type === 'swap' || s.type === 'swapped') ? s.comparing : [],
+      s.pivot, s.sorted || [], s.type === 'swap' ? 'swap' : 'none');
+    if (s.type === 'compare') comparisons++;
+    if (s.type === 'swap') swaps++;
+    document.getElementById('step-info').textContent = s.msg;
+    addLog(s.msg, s.type === 'placed' || s.type === 'done');
+    updateStats();
+  }
+
+  function startSort() {
+    if (!values.length) { addLog('Adicione valores primeiro!'); return; }
+    stopTimer(); resetStats(); clearLog();
+    const arr = [...values];
+    steps = quickSortSteps(arr);
+    currentStep = 0;
+    document.getElementById('btn-pause').disabled = false;
+    document.getElementById('btn-step').disabled = false;
+    paused = false;
+    document.getElementById('btn-pause').innerHTML = '<i class="ti ti-player-pause"></i> Pausar';
+    runAnimation();
+  }
+
+  function runAnimation() {
+    if (paused) return;
+    if (currentStep >= steps.length) { stopTimer(); finishSort(); return; }
+    applyStep(steps[currentStep++]);
+    const delay = speedMap[document.getElementById('speed-slider').value];
+    animTimer = setTimeout(runAnimation, delay);
+  }
+
+  function stopTimer() { if (animTimer) { clearTimeout(animTimer); animTimer = null; } }
+
+  function finishSort() {
+    document.getElementById('btn-pause').disabled = true;
+    document.getElementById('btn-step').disabled = true;
+    document.getElementById('step-info').textContent = '✓ Ordenação concluída com sucesso!';
+    addLog('─── Ordenação finalizada ───', true);
+  }
+
+  function togglePause() {
+    paused = !paused;
+    const btn = document.getElementById('btn-pause');
+    if (paused) {
+      stopTimer();
+      btn.innerHTML = '<i class="ti ti-player-play"></i> Continuar';
+    } else {
+      btn.innerHTML = '<i class="ti ti-player-pause"></i> Pausar';
+      runAnimation();
+    }
+  }
+
+  function stepForward() {
+    if (currentStep >= steps.length) { finishSort(); return; }
+    stopTimer(); paused = true;
+    document.getElementById('btn-pause').innerHTML = '<i class="ti ti-player-play"></i> Continuar';
+    applyStep(steps[currentStep++]);
+  }
+
+  function resetViz() {
+    stopTimer(); paused = false; steps = []; currentStep = 0;
+    resetStats(); clearLog();
+    renderBars(values, [], -1, [], 'none');
+    renderChips();
+    document.getElementById('btn-pause').disabled = true;
+    document.getElementById('btn-step').disabled = true;
+    document.getElementById('btn-pause').innerHTML = '<i class="ti ti-player-pause"></i> Pausar';
+    document.getElementById('step-info').textContent = 'Clique em "Iniciar" para visualizar.';
+  }
+
+  /* ── INIT ── */
+  generateRandom();
+</script>
+</body>
+</html>
